@@ -692,9 +692,16 @@ func TestFindPeersConnectedToPeer(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
+	for c := 10; c < 50; c += 5 {
+		for a := 0; a < 30; a++ {
+			testFindPeersConnectedToPeerSingle(t, c)
+		}
+	}
+}
 
+func testFindPeersConnectedToPeerSingle(t *testing.T, nodeCount int) bool {
 	ctx := context.Background()
-	dhtCount := 50
+	dhtCount := nodeCount
 	_, peers, dhts := setupDHTS(ctx, dhtCount, t)
 	defer func() {
 		for i := 0; i < dhtCount; i++ {
@@ -707,7 +714,7 @@ func TestFindPeersConnectedToPeer(t *testing.T) {
 	// 0-1, [2:49]-1
 	srcInd := 0
 	tgtInd := 1
-	shouldFind := connectDHTS(t, ctx, dhts, 2, 49, tgtInd)
+	shouldFind := connectDHTS(t, ctx, dhts, 2, dhtCount-1, tgtInd)
 	connect(t, ctx, dhts[srcInd], dhts[tgtInd])
 
 	ctxT, _ := context.WithTimeout(ctx, time.Second)
@@ -738,9 +745,11 @@ func TestFindPeersConnectedToPeer(t *testing.T) {
 
 	matchErr := testPeerListsMatch(t, shouldFind, found)
 	if matchErr {
-		fmt.Println("Should find: ", shouldFind)
-		fmt.Println("Found: ", found)
+		t.Logf("Match error for dht count %d", nodeCount)
+		t.Log("Should find: ", shouldFind)
+		t.Log("Found: ", found)
 	}
+	return matchErr
 }
 
 func testPeerListsMatch(t *testing.T, p1, p2 []peer.ID) bool {
